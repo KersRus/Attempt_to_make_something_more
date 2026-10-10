@@ -21,6 +21,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Build CA bundle         
+        run: cat russian_trusted_root_ca.cer russian_trusted_sub_ca.cer > tbank_ca_bundle.pem
+
       - name: Run monitor
         env:
           TBANK_TOKEN: ${{ secrets.TBANK_TOKEN }}
