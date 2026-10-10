@@ -23,15 +23,11 @@ jobs:
 
       - name: Build combined CA bundle
         run: |
-          # 1. Получаем стандартный CA-бандл Mozilla, который использует requests
-          python -c "import certifi; print(certifi.where())" > /dev/null
           CERTIFI_PATH=$(python -c "import certifi; print(certifi.where())")
-          # 2. Объединяем его с сертификатами Минцифры
           cat "$CERTIFI_PATH" \
               russian_trusted_root_ca_pem.crt \
               russian_trusted_sub_ca_pem.crt \
               russian_trusted_sub_ca_2024_pem.crt > tbank_ca_bundle.pem
-          # 3. Проверяем, что всё склеилось
           echo "Total certificates in bundle:"
           grep -c "BEGIN CERTIFICATE" tbank_ca_bundle.pem
 
