@@ -2,10 +2,9 @@ name: Market Monitor
 
 on:
   schedule:
-    # Каждые 10 минут с 06:00 до 23:59 по Москве
     - cron: '*/10 6-23 * * *'
       timezone: "Europe/Moscow"
-  workflow_dispatch:  # ручной запуск для отладки
+  workflow_dispatch:
 
 jobs:
   monitor:
@@ -21,15 +20,14 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Build CA bundle
+      - name: Install Russian Trusted CA certificates
         run: |
-          CERTIFI_PATH=$(python -c "import certifi; print(certifi.where())")
-          cat "$CERTIFI_PATH" \
-              russian_trusted_root_ca_pem.crt \
-              russian_trusted_sub_ca_pem.crt \
-              russian_trusted_sub_ca_2024_pem.crt > tbank_ca_bundle.pem
-          echo "Certificates in bundle:"
-          grep -c "BEGIN CERTIFICATE" tbank_ca_bundle.pem
+          sudo cp russian_trusted_root_ca_pem.crt /usr/local/share/ca-certificates/russian_trusted_root_ca.crt
+          sudo cp russian_trusted_sub_ca_pem.crt /usr/local/share/ca-certificates/russian_trusted_sub_ca.crt
+          sudo cp russian_trusted_sub_ca_2024_pem.crt /usr/local/share/ca-certificates/russian_trusted_sub_ca_2024.crt
+          sudo update-ca-certificates
+          echo "=== Installed certificates ==="
+          ls -la /usr/local/share/ca-certificates/
 
       - name: Run monitor
         env:
@@ -37,5 +35,5 @@ jobs:
           YANDEX_API_KEY: ${{ secrets.YANDEX_API_KEY }}
           YANDEX_FOLDER_ID: ${{ secrets.YANDEX_FOLDER_ID }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-          SSL_TBANK_VERIFY: "True"
+          REQUESTS_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt
         run: python main.py
