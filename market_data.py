@@ -23,7 +23,6 @@ def get_last_prices() -> dict:
         json=payload,
         headers=headers,
         timeout=15,
-        verify=TBANK_CA_BUNDLE,
     )
     response.raise_for_status()
 
