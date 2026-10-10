@@ -1,4 +1,4 @@
-from tinkoff.invest import Client
+from t_tech.invest import Client
 from config import TBANK_TOKEN, TRACKED_COMPANIES
 
 def get_last_prices() -> dict:
