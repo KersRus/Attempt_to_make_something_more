@@ -1,3 +1,4 @@
+import re
 import requests
 import feedparser
 from datetime import datetime, timedelta, timezone
@@ -35,13 +36,12 @@ def fetch_tbank_news(minutes_back: int = 10) -> list[dict]:
     news_items = []
 
     for item in data.get("items", []):
-        # Парсим дату публикации
         ts_raw = item.get("ts", "")
         try:
-            # T-Bank возвращает ISO 8601 с 'Z' на конце
-            pub_dt = datetime.fromisoformat(ts_raw.replace("Z", "+00:00")).astimezone(MSK)
+            pub_dt = datetime.fromisoformat(
+                ts_raw.replace("Z", "+00:00")
+            ).astimezone(MSK)
         except Exception:
-            # Если не получилось распарсить — пропускаем новость
             continue
 
         if pub_dt < cutoff:
@@ -86,25 +86,31 @@ def fetch_rss_news(minutes_back: int = 10) -> list[dict]:
         for entry in feed.entries:
             published = entry.get("published_parsed")
             if published:
-                pub_dt = datetime(*published[:6], tzinfo=timezone.utc).astimezone(MSK)
+                pub_dt = datetime(
+                    *published[:6], tzinfo=timezone.utc
+                ).astimezone(MSK)
                 if pub_dt < cutoff:
                     continue
             else:
-                # Если дата отсутствует — пропускаем, чтобы не сыпать старьём
                 continue
 
             title = entry.get("title", "")
             summary = entry.get("summary", "")
-            text = f"{title} {summary}".lower()
+            text_lower = f"{title} {summary}".lower()
 
             matched = False
             for name in company_names:
-                if name.lower() in text:
+                if name.lower() in text_lower:
                     matched = True
                     break
             if not matched:
                 for ticker in tickers:
-                    if ticker.lower() in text:
+                    pattern = (
+                        rf"(?<![a-zA-Zа-яА-Я])"
+                        rf"{re.escape(ticker.lower())}"
+                        rf"(?![a-zA-Zа-яА-Я])"
+                    )
+                    if re.search(pattern, text_lower):
                         matched = True
                         break
 
