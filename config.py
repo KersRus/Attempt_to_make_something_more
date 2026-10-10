@@ -3,10 +3,6 @@ import os
 # T-Bank Invest API — токен только для чтения
 TBANK_TOKEN = os.environ["TBANK_TOKEN"]
 
-# Yandex GPT API
-YANDEX_API_KEY = os.environ["YANDEX_API_KEY"]
-YANDEX_FOLDER_ID = os.environ["YANDEX_FOLDER_ID"]
-
 # ntfy.sh — топик для уведомлений
 NTFY_TOPIC = os.environ["NTFY_TOPIC"]
 
