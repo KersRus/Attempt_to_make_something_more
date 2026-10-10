@@ -1,5 +1,5 @@
 import requests
-from config import TBANK_TOKEN, TBANK_API_URL, TRACKED_COMPANIES, TBANK_CA_BUNDLE
+from config import TBANK_TOKEN, TBANK_API_URL, TRACKED_COMPANIES
 
 
 def get_last_prices() -> dict:
