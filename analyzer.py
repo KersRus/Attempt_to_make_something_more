@@ -32,7 +32,7 @@ def analyze_news(news_items: list[dict]) -> str:
 Отвечай на русском языке, структурированно и кратко."""
 
     payload = {
-        "modelUri": f"gpt://{YANDEX_FOLDER_ID}/yandexgpt-lite",
+        "modelUri": f"gpt://{YANDEX_FOLDER_ID}/yandexgpt",
         "completionOptions": {
             "stream": False,
             "temperature": 0.3,
