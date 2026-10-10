@@ -1,6 +1,6 @@
 import feedparser
 from datetime import datetime, timedelta, timezone
-from tinkoff.invest import Client
+from t_tech.invest import Client
 from config import (
     TBANK_TOKEN,
     RSS_FEEDS,
