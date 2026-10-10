@@ -11,12 +11,12 @@ from config import (
 MSK = timezone(timedelta(hours=3))
 
 
-def fetch_tbank_news(limit: int = 50) -> list[dict]:
+def fetch_tbank_news(minutes_back: int = 10) -> list[dict]:
     """
-    Получает новости из T-Bank Invest API.
-    Возвращает список словарей с полями: title, content, source, priority, ts, tickers.
+    Получает новости из T-Bank Invest API и оставляет только те,
+    что опубликованы за последние `minutes_back` минут.
     """
-    payload = {"limit": limit}
+    payload = {"limit": 50}
     headers = {
         "Authorization": f"Bearer {TBANK_TOKEN}",
         "Content-Type": "application/json",
@@ -31,9 +31,22 @@ def fetch_tbank_news(limit: int = 50) -> list[dict]:
     response.raise_for_status()
 
     data = response.json()
+    cutoff = datetime.now(MSK) - timedelta(minutes=minutes_back)
     news_items = []
 
     for item in data.get("items", []):
+        # Парсим дату публикации
+        ts_raw = item.get("ts", "")
+        try:
+            # T-Bank возвращает ISO 8601 с 'Z' на конце
+            pub_dt = datetime.fromisoformat(ts_raw.replace("Z", "+00:00")).astimezone(MSK)
+        except Exception:
+            # Если не получилось распарсить — пропускаем новость
+            continue
+
+        if pub_dt < cutoff:
+            continue
+
         tickers = []
         for inst in item.get("instrumentId", []):
             instrument = inst.get("instrument", {})
@@ -46,19 +59,19 @@ def fetch_tbank_news(limit: int = 50) -> list[dict]:
             "content": item.get("content", ""),
             "source": item.get("source", "T-Bank"),
             "priority": item.get("priority", False),
-            "ts": item.get("ts", ""),
+            "ts": pub_dt.isoformat(),
             "tickers": tickers,
         })
 
     return news_items
 
 
-def fetch_rss_news(hours_back: int = 1) -> list[dict]:
+def fetch_rss_news(minutes_back: int = 10) -> list[dict]:
     """
-    Собирает новости из RSS-лент.
-    Фильтрует по времени (за последние `hours_back` часов) и по упоминанию компаний.
+    Собирает новости из RSS-лент за последние `minutes_back` минут.
+    Фильтрует по упоминанию компаний.
     """
-    cutoff = datetime.now(MSK) - timedelta(hours=hours_back)
+    cutoff = datetime.now(MSK) - timedelta(minutes=minutes_back)
     all_news = []
 
     company_names = list(TRACKED_COMPANIES.values())
@@ -77,7 +90,8 @@ def fetch_rss_news(hours_back: int = 1) -> list[dict]:
                 if pub_dt < cutoff:
                     continue
             else:
-                pub_dt = datetime.now(MSK)
+                # Если дата отсутствует — пропускаем, чтобы не сыпать старьём
+                continue
 
             title = entry.get("title", "")
             summary = entry.get("summary", "")
