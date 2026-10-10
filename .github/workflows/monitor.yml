@@ -21,6 +21,16 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Build CA bundle
+        run: |
+          CERTIFI_PATH=$(python -c "import certifi; print(certifi.where())")
+          cat "$CERTIFI_PATH" \
+              russian_trusted_root_ca_pem.crt \
+              russian_trusted_sub_ca_pem.crt \
+              russian_trusted_sub_ca_2024_pem.crt > tbank_ca_bundle.pem
+          echo "Certificates in bundle:"
+          grep -c "BEGIN CERTIFICATE" tbank_ca_bundle.pem
+
       - name: Run monitor
         env:
           TBANK_TOKEN: ${{ secrets.TBANK_TOKEN }}
