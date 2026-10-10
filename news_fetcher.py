@@ -28,7 +28,6 @@ def fetch_tbank_news(limit: int = 50) -> list[dict]:
         json=payload,
         headers=headers,
         timeout=15,
-        verify=TBANK_CA_BUNDLE,
     )
     response.raise_for_status()
 
