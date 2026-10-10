@@ -1,3 +1,3 @@
-t-tech-investments --index-url https://opensource.tbank.ru/api/v4/projects/238/packages/pypi/simple
+t-tech-investments --index-url https://opensource.tbank.ru/api/v4/projects/238/packages/pypi/simple --trusted-host opensource.tbank.ru
 feedparser>=6.0.11
 requests>=2.31.0
