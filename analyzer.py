@@ -4,48 +4,58 @@ from config import YANDEX_API_KEY, YANDEX_FOLDER_ID, TRACKED_COMPANIES
 
 def analyze_news(news_items: list[dict]) -> str:
     """
-    Отправляет новости в Yandex GPT и возвращает краткую информационную сводку.
-    Формулировка промпта намеренно избегает слов «анализ», «прогноз», «совет»,
-    чтобы не срабатывали фильтры безопасности модели.
+    Отправляет новости в Yandex GPT и возвращает только те заголовки,
+    которые модель сочла значимыми. Без интерпретаций и оценок.
     """
     if not news_items:
         return ""
 
+    # Убираем дубли по заголовку
+    seen = set()
+    unique = []
+    for item in news_items:
+        title = item.get("title", "").strip()
+        if title and title not in seen:
+            seen.add(title)
+            unique.append(item)
+
+    if not unique:
+        return ""
+
     news_text = "\n".join(
-        f"- [{item['source']}] {item['title']}"
-        for item in news_items[:30]
+        f"{i}. [{item['source']}] {item['title']}"
+        for i, item in enumerate(unique[:40], start=1)
     )
 
     company_list = ", ".join(TRACKED_COMPANIES.values())
 
     system_prompt = (
-        "Ты — информационный ассистент, который делает краткие сводки новостей "
-        "для личного дневника наблюдений. Ты не даёшь советов, не делаешь прогнозов "
-        "и не рекомендуешь покупать или продавать. Ты только пересказываешь факты "
-        "из предоставленных заголовков."
+        "Ты — новостной редактор. Твоя задача — просмотреть список заголовков "
+        "и выбрать те, которые сообщают о значимых событиях. Ты не пишешь "
+        "собственных комментариев и не даёшь оценок."
     )
 
-    user_prompt = f"""Ниже — список заголовков новостей за последний час, 
-собранных из открытых источников. Компании, которые я отслеживаю: {company_list}.
+    user_prompt = f"""Ниже — список новостных заголовков за последний час.
+Я отслеживаю события, связанные с компаниями: {company_list}.
 
 Заголовки:
 {news_text}
 
-Сделай краткую фактическую сводку: перечисли, какие события упоминаются 
-в этих заголовках и какие компании они касаются. Опиши только то, что прямо 
-написано в заголовках, не добавляй собственных выводов и оценок.
+Выбери из списка те заголовки, которые сообщают о существенных событиях: 
+отчётность, сделки, кадровые изменения в руководстве, регуляторные решения, 
+крупные контракты, судебные разбирательства.
 
-Если в заголовках нет ничего существенного по моим компаниям — 
-напиши «Существенных новостей нет».
+Верни только номера выбранных заголовков через запятую. Например: 2, 5, 11.
+Если ничего существенного нет — верни слово "нет".
 
-Формат ответа: 3–5 предложений или короткий список. Без вступлений и заключений."""
+Не добавляй никаких пояснений, только номера."""
 
     payload = {
-        "modelUri": f"gpt://{YANDEX_FOLDER_ID}/yandexgpt",
+        "modelUri": f"gpt://{YANDEX_FOLDER_ID}/yandexgpt-lite",
         "completionOptions": {
             "stream": False,
-            "temperature": 0.2,
-            "maxTokens": 800,
+            "temperature": 0.1,
+            "maxTokens": 200,
         },
         "messages": [
             {"role": "system", "text": system_prompt},
@@ -68,6 +78,23 @@ def analyze_news(news_items: list[dict]) -> str:
 
     result = response.json()
     alternatives = result.get("result", {}).get("alternatives", [])
-    if alternatives:
-        return alternatives[0].get("message", {}).get("text", "")
-    return ""
+    if not alternatives:
+        return ""
+
+    raw = alternatives[0].get("message", {}).get("text", "").strip()
+    print(f"YandexGPT ответил: {raw}")
+
+    # Парсим номера из ответа
+    if "нет" in raw.lower() and not any(c.isdigit() for c in raw):
+        return ""
+
+    import re
+    numbers = [int(n) for n in re.findall(r"\d+", raw)]
+
+    selected = []
+    for n in numbers:
+        if 1 <= n <= len(unique):
+            item = unique[n - 1]
+            selected.append(f"• [{item['source']}] {item['title']}")
+
+    return "\n".join(selected)
