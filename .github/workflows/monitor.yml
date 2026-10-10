@@ -32,8 +32,6 @@ jobs:
       - name: Run monitor
         env:
           TBANK_TOKEN: ${{ secrets.TBANK_TOKEN }}
-          YANDEX_API_KEY: ${{ secrets.YANDEX_API_KEY }}
-          YANDEX_FOLDER_ID: ${{ secrets.YANDEX_FOLDER_ID }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           REQUESTS_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt
         run: python main.py
