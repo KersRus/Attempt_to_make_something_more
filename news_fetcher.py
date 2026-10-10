@@ -6,6 +6,7 @@ from config import (
     TBANK_API_URL,
     RSS_FEEDS,
     TRACKED_COMPANIES,
+    TBANK_CA_BUNDLE,
 )
 
 MSK = timezone(timedelta(hours=3))
