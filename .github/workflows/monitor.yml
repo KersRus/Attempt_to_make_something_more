@@ -37,4 +37,5 @@ jobs:
           YANDEX_API_KEY: ${{ secrets.YANDEX_API_KEY }}
           YANDEX_FOLDER_ID: ${{ secrets.YANDEX_FOLDER_ID }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          SSL_TBANK_VERIFY: "True"
         run: python main.py
