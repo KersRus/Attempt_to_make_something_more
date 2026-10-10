@@ -19,15 +19,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          pip install \
-            --index-url https://opensource.tbank.ru/api/v4/projects/238/packages/pypi/simple \
-            --trusted-host opensource.tbank.ru \
-            t-tech-investments
-          pip install \
-            --trusted-host pypi.org \
-            --trusted-host files.pythonhosted.org \
-            feedparser requests
+        run: pip install -r requirements.txt
 
       - name: Run monitor
         env:
