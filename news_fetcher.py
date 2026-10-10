@@ -11,11 +11,21 @@ from config import (
 
 MSK = timezone(timedelta(hours=3))
 
+# Варианты написания названий компаний для поиска в RSS.
+# Ключи должны совпадать с ключами TRACKED_COMPANIES.
+COMPANY_ALIASES = {
+    "OZON": ["ozon", "озон"],
+    "T": ["т-технологии", "тинькофф", "т-банк", "t-технологии", "тcs group"],
+    "YDEX": ["яндекс", "yandex"],
+    "POSI": ["positive technologies", "позитив", "positive tech"],
+}
+
 
 def fetch_tbank_news(minutes_back: int = 10) -> list[dict]:
     """
-    Получает новости из T-Bank Invest API и оставляет только те,
-    что опубликованы за последние `minutes_back` минут.
+    Получает новости из T-Bank Invest API.
+    Оставляет только те, что относятся к отслеживаемым компаниям
+    и опубликованы за последние `minutes_back` минут.
     """
     payload = {"limit": 50}
     headers = {
@@ -33,9 +43,11 @@ def fetch_tbank_news(minutes_back: int = 10) -> list[dict]:
 
     data = response.json()
     cutoff = datetime.now(MSK) - timedelta(minutes=minutes_back)
+    tracked_tickers = set(TRACKED_COMPANIES.keys())
     news_items = []
 
     for item in data.get("items", []):
+        # 1. Фильтр по времени
         ts_raw = item.get("ts", "")
         try:
             pub_dt = datetime.fromisoformat(
@@ -47,12 +59,17 @@ def fetch_tbank_news(minutes_back: int = 10) -> list[dict]:
         if pub_dt < cutoff:
             continue
 
-        tickers = []
+        # 2. Фильтр по тикерам: собираем только те, что есть в нашем списке
+        matched_tickers = []
         for inst in item.get("instrumentId", []):
             instrument = inst.get("instrument", {})
-            ticker = instrument.get("ticker")
-            if ticker:
-                tickers.append(ticker)
+            ticker = instrument.get("ticker", "")
+            if ticker in tracked_tickers:
+                matched_tickers.append(ticker)
+
+        # 3. Если ни одного из наших тикеров нет — пропускаем новость
+        if not matched_tickers:
+            continue
 
         news_items.append({
             "title": item.get("title", ""),
@@ -60,7 +77,7 @@ def fetch_tbank_news(minutes_back: int = 10) -> list[dict]:
             "source": item.get("source", "T-Bank"),
             "priority": item.get("priority", False),
             "ts": pub_dt.isoformat(),
-            "tickers": tickers,
+            "tickers": matched_tickers,
         })
 
     return news_items
@@ -69,13 +86,16 @@ def fetch_tbank_news(minutes_back: int = 10) -> list[dict]:
 def fetch_rss_news(minutes_back: int = 10) -> list[dict]:
     """
     Собирает новости из RSS-лент за последние `minutes_back` минут.
-    Фильтрует по упоминанию компаний.
+    Фильтрует по упоминанию компаний (по имени или алиасу).
+    Тикеры не используем — они слишком короткие и дают ложные срабатывания.
     """
     cutoff = datetime.now(MSK) - timedelta(minutes=minutes_back)
     all_news = []
 
-    company_names = list(TRACKED_COMPANIES.values())
-    tickers = list(TRACKED_COMPANIES.keys())
+    # Собираем все алиасы в один список нижним регистром
+    all_aliases = []
+    for aliases in COMPANY_ALIASES.values():
+        all_aliases.extend(aliases)
 
     for source_name, feed_url in RSS_FEEDS.items():
         try:
@@ -98,21 +118,18 @@ def fetch_rss_news(minutes_back: int = 10) -> list[dict]:
             summary = entry.get("summary", "")
             text_lower = f"{title} {summary}".lower()
 
+            # Проверяем, есть ли в тексте хотя бы один алиас
             matched = False
-            for name in company_names:
-                if name.lower() in text_lower:
+            for alias in all_aliases:
+                # Ищем алиас как отдельную фразу (на границе слов)
+                pattern = (
+                    rf"(?<![a-zA-Zа-яА-Я])"
+                    rf"{re.escape(alias)}"
+                    rf"(?![a-zA-Zа-яА-Я])"
+                )
+                if re.search(pattern, text_lower):
                     matched = True
                     break
-            if not matched:
-                for ticker in tickers:
-                    pattern = (
-                        rf"(?<![a-zA-Zа-яА-Я])"
-                        rf"{re.escape(ticker.lower())}"
-                        rf"(?![a-zA-Zа-яА-Я])"
-                    )
-                    if re.search(pattern, text_lower):
-                        matched = True
-                        break
 
             if matched:
                 all_news.append({
