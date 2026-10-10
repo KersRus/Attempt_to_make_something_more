@@ -2,7 +2,7 @@ name: Market Monitor
 
 on:
   schedule:
-    # Каждые 10 минут, с 06:00 до 23:59 по Москве
+    # Каждые 10 минут с 06:00 до 23:59 по Москве
     - cron: '*/10 6-23 * * *'
       timezone: "Europe/Moscow"
   workflow_dispatch:  # ручной запуск для отладки
@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: '3.11'
 
-       - name: Install dependencies
+      - name: Install dependencies
         run: |
           pip install \
             --index-url https://opensource.tbank.ru/api/v4/projects/238/packages/pypi/simple \
@@ -28,7 +28,7 @@ jobs:
             --trusted-host pypi.org \
             --trusted-host files.pythonhosted.org \
             feedparser requests
-      
+
       - name: Run monitor
         env:
           TBANK_TOKEN: ${{ secrets.TBANK_TOKEN }}
