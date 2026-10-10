@@ -29,3 +29,7 @@ RSS_FEEDS = {
 
 # T-Bank Invest API endpoint
 TBANK_API_URL = "https://invest-public-api.tbank.ru/rest"
+
+# Путь к CA-бандлу для T-Bank API
+# GitHub Actions запускает код из корня репозитория, поэтому путь относительный
+TBANK_CA_BUNDLE = os.path.join(os.path.dirname(__file__), "russian_trusted_root_ca.cer")
