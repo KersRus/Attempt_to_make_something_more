@@ -22,7 +22,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Build CA bundle         
-        run: cat russian_trusted_root_ca_pem.crt russian_trusted_sub_ca_pem.crt > tbank_ca_bundle.pem
+        run: cat russian_trusted_root_ca_pem.crt russian_trusted_sub_ca_pem.crt russian_trusted_sub_ca_2024_pem.crt > tbank_ca_bundle.pem
 
       - name: Run monitor
         env:
