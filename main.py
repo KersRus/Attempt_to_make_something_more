@@ -31,8 +31,8 @@ def main():
 
     # 2. Собираем новости
     try:
-        tbank_news = fetch_tbank_news()
-        rss_news = fetch_rss_news(hours_back=1)
+        tbank_news = fetch_tbank_news(minutes_back=10)
+        rss_news = fetch_rss_news(minutes_back=10)
         all_news = tbank_news + rss_news
         print(f"Собрано новостей: {len(all_news)}")
     except Exception as e:
